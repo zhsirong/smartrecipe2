@@ -16,7 +16,8 @@ const Home = () => {
   const [randomRecipe, setRandomRecipe] = useState(null);
   const [favorites, setFavorites] = useState(getFavorites());
 
-  const [expandedId, setExpandedId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null); // for main card
+  const [savedExpandedId, setSavedExpandedId] = useState(null); // for saved list only
   const [expandedDetails, setExpandedDetails] = useState({});
 
   const addIngredient = (ing) => {
@@ -83,11 +84,23 @@ const Home = () => {
         }));
       }
       setExpandedId(id);
+      setSavedExpandedId(null); // avoid double detail
     }
   };
 
-  const closeDetail = () => {
-    setExpandedId(null);
+  const toggleSavedDetail = async (id) => {
+    if (savedExpandedId === id) {
+      setSavedExpandedId(null);
+    } else {
+      if (!expandedDetails[id]) {
+        const res = await getRecipeDetailsById(id);
+        setExpandedDetails((prev) => ({
+          ...prev,
+          [id]: res.meals[0],
+        }));
+      }
+      setSavedExpandedId(id);
+    }
   };
 
   const showRandom = async () => {
@@ -143,7 +156,6 @@ const Home = () => {
         ))}
       </div>
 
-      {/* 🥗 Recipes Section */}
       <h2>🥗 Recipes</h2>
       <div className="recipes">
         {recipes.map((r) => (
@@ -153,14 +165,13 @@ const Home = () => {
             isSaved={isRecipeSaved(r.idMeal)}
             onToggleSave={toggleSave}
             onToggleDetail={toggleRecipeDetail}
-            onCloseDetail={closeDetail}
+            onCloseDetail={() => setExpandedId(null)}
             detail={expandedDetails[r.idMeal]}
             isExpanded={expandedId === r.idMeal}
           />
         ))}
       </div>
 
-      {/* 🎲 Random Recipe Section */}
       <h2>🎲 Feeling Lucky?</h2>
       <button onClick={showRandom}>Show me a random recipe</button>
       {randomRecipe && (
@@ -174,14 +185,13 @@ const Home = () => {
             isSaved={isRecipeSaved(randomRecipe.idMeal)}
             onToggleSave={toggleSave}
             onToggleDetail={toggleRecipeDetail}
-            onCloseDetail={closeDetail}
+            onCloseDetail={() => setExpandedId(null)}
             detail={expandedDetails[randomRecipe.idMeal]}
             isExpanded={expandedId === randomRecipe.idMeal}
           />
         </div>
       )}
 
-      {/* ⭐ Saved Recipes */}
       <h2>⭐ Saved Recipes</h2>
       <button
         onClick={clearFavorites}
@@ -200,7 +210,7 @@ const Home = () => {
         {favorites.map((f, idx) => (
           <li key={`${f.idMeal}-${idx}`}>
             <button
-              onClick={() => toggleRecipeDetail(f.idMeal)}
+              onClick={() => toggleSavedDetail(f.idMeal)}
               style={{
                 all: "unset",
                 cursor: "pointer",
@@ -210,7 +220,7 @@ const Home = () => {
             >
               {f.strMeal}
             </button>
-            {expandedId === f.idMeal && expandedDetails[f.idMeal] && (
+            {savedExpandedId === f.idMeal && expandedDetails[f.idMeal] && (
               <div className="details" style={{
                 marginTop: "0.5em",
                 backgroundColor: "#f3f3f3",
@@ -220,7 +230,7 @@ const Home = () => {
                 borderRadius: "5px"
               }}>
                 <button
-                  onClick={closeDetail}
+                  onClick={() => setSavedExpandedId(null)}
                   style={{
                     position: "absolute",
                     top: "4px",
