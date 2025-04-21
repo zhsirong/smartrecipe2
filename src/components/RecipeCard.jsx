@@ -11,7 +11,12 @@ const RecipeCard = ({
 }) => {
   return (
     <div className="card" style={{ marginBottom: "2em" }}>
-      <img src={recipe.strMealThumb} alt={recipe.strMeal} />
+      <img
+  src={recipe.strMealThumb}
+  alt={recipe.strMeal}
+  style={{ width: "100%", maxWidth: "300px", height: "auto", borderRadius: "8px" }}
+/>
+
       <h3>{recipe.strMeal}</h3>
 
       <button onClick={() => onToggleSave(recipe)}>
