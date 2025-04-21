@@ -1,3 +1,13 @@
+/**
+ * Home.jsx
+ * 
+ * Main logic hub for the SmartRecipe2 application.
+ * 
+ * Handles ingredient input, recipe filtering (AND logic), favorites management,
+ * random recipe generation, and UI state for toggling recipe detail views.
+ * Uses TheMealDB API and localStorage for data handling.
+ */
+
 import React, { useState } from "react";
 import IngredientInput from "../components/IngredientInput";
 import RecipeCard from "../components/RecipeCard";
@@ -10,16 +20,27 @@ import { getFavorites } from "../utils/storage";
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
+/**
+ * Home component – top-level container for app logic and UI.
+ *
+ * @returns {JSX.Element} The full recipe application UI.
+ */
 const Home = () => {
   const [ingredients, setIngredients] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [randomRecipe, setRandomRecipe] = useState(null);
   const [favorites, setFavorites] = useState(getFavorites());
 
-  const [expandedId, setExpandedId] = useState(null); // for main card
-  const [savedExpandedId, setSavedExpandedId] = useState(null); // for saved list only
-  const [expandedDetails, setExpandedDetails] = useState({});
+  const [expandedId, setExpandedId] = useState(null); // For recipe list
+  const [savedExpandedId, setSavedExpandedId] = useState(null); // For favorites list
+  const [expandedDetails, setExpandedDetails] = useState({}); // Cached recipe detail data
 
+  /**
+   * Adds a new ingredient to the list and triggers recipe search.
+   * Ignores duplicates.
+   * 
+   * @param {string} ing - Ingredient entered by the user.
+   */
   const addIngredient = (ing) => {
     if (!ingredients.includes(ing)) {
       const updated = [...ingredients, ing];
@@ -28,12 +49,23 @@ const Home = () => {
     }
   };
 
+  /**
+   * Removes an ingredient by index and updates the recipe results.
+   *
+   * @param {number} idx - Index of the ingredient to remove.
+   */
   const removeIngredient = (idx) => {
     const updated = ingredients.filter((_, i) => i !== idx);
     setIngredients(updated);
     search(updated);
   };
 
+  /**
+   * Fetches recipes that contain *all* selected ingredients.
+   * Uses AND logic by intersecting sets of recipe IDs.
+   *
+   * @param {string[]} ingredientList - Optional override list (defaults to current state).
+   */
   const search = async (ingredientList = ingredients) => {
     if (ingredientList.length === 0) {
       setRecipes([]);
@@ -57,6 +89,12 @@ const Home = () => {
     setRecipes(intersectedRecipes);
   };
 
+  /**
+   * Toggles a recipe in or out of the favorites list.
+   * Uses ID to avoid duplicates. Triggers a toast.
+   *
+   * @param {Object} recipe - The recipe to save or remove.
+   */
   const toggleSave = (recipe) => {
     const isAlreadySaved = favorites.some((f) => f.idMeal === recipe.idMeal);
     if (isAlreadySaved) {
@@ -69,9 +107,21 @@ const Home = () => {
     }
   };
 
+  /**
+   * Checks whether a recipe is currently saved.
+   *
+   * @param {string} idMeal - The recipe ID to check.
+   * @returns {boolean} True if saved, false otherwise.
+   */
   const isRecipeSaved = (idMeal) =>
     favorites.some((f) => f.idMeal === idMeal);
 
+  /**
+   * Expands or collapses recipe detail view from the main list.
+   * Fetches detail from API if not already cached.
+   *
+   * @param {string} id - MealDB ID of the recipe.
+   */
   const toggleRecipeDetail = async (id) => {
     if (expandedId === id) {
       setExpandedId(null);
@@ -84,10 +134,16 @@ const Home = () => {
         }));
       }
       setExpandedId(id);
-      setSavedExpandedId(null); // avoid double detail
+      setSavedExpandedId(null);
     }
   };
 
+  /**
+   * Expands or collapses recipe detail view from the favorites list.
+   * Fetches detail from API if not already cached.
+   *
+   * @param {string} id - MealDB ID of the recipe.
+   */
   const toggleSavedDetail = async (id) => {
     if (savedExpandedId === id) {
       setSavedExpandedId(null);
@@ -103,6 +159,9 @@ const Home = () => {
     }
   };
 
+  /**
+   * Fetches a random recipe from the API and displays it.
+   */
   const showRandom = async () => {
     const res = await getRandomRecipe();
     const meal = res.meals[0];
@@ -110,11 +169,17 @@ const Home = () => {
     setExpandedId(null);
   };
 
+  /**
+   * Closes the currently displayed random recipe.
+   */
   const closeRandom = () => {
     setRandomRecipe(null);
     setExpandedId(null);
   };
 
+  /**
+   * Clears all saved favorite recipes from state.
+   */
   const clearFavorites = () => {
     setFavorites([]);
     toast.info("Cleared all saved recipes.");
@@ -122,7 +187,6 @@ const Home = () => {
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto", padding: "1em" }}>
-  
       <h1>🍳 Smart Recipe Assistant</h1>
 
       <IngredientInput onAdd={addIngredient} />
